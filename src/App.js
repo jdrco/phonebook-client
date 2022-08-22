@@ -4,12 +4,15 @@ import personServices from './services/persons';
 import Filter from './components/Filter';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
+import Notification from './components/Notification';
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState('Add a new name');
   const [newNumber, setNewNumber] = useState('Add number');
   const [filter, setFilter] = useState('');
+  const [notification, setNotification] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     personServices.getAll().then((initialPersons) => {
@@ -69,6 +72,12 @@ const App = () => {
         setPersons(persons.concat(createdPerson));
         setNewName('');
         setNewNumber('');
+
+        setNotification(`Added ${createdPerson.name} to your phonebook`);
+        setError(false);
+        setTimeout(() => {
+          setNotification(null);
+        }, 3000);
       });
     }
   };
@@ -76,16 +85,28 @@ const App = () => {
   const removePerson = (id) => {
     const person = persons.find((person) => person.id === id);
     if (window.confirm(`Do you want to delete ${person.name}?`)) {
-      personServices.remove(id).then(() => {
-        setPersons(persons.filter((person) => person.id !== id));
-      });
+      personServices
+        .remove(id)
+        .then(() => {
+          setPersons(persons.filter((person) => person.id !== id));
+        })
+        .catch((error) => {
+          setError(true);
+          setNotification(
+            `Person '${person.name}' was already removed from server`
+          );
+          setTimeout(() => {
+            setNotification(null);
+            setError(false);
+          }, 5000);
+        });
     }
   };
 
   return (
     <>
       <h2>Phonebook</h2>
-
+      <Notification message={notification} error={error} />
       <Filter filter={filter} handleFilterChange={handleFilterChange} />
 
       <PersonForm
