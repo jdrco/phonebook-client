@@ -1,19 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import personServices from './services/persons';
+
 import Filter from './components/Filter';
-import Person from './components/Person';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456', id: 1 },
-    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 },
-  ]);
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState('Add a new name');
   const [newNumber, setNewNumber] = useState('Add number');
   const [filter, setFilter] = useState('');
+
+  useEffect(() => {
+    personServices.getAll().then((initialPersons) => {
+      setPersons(initialPersons);
+    });
+  }, []);
 
   const handleNameChange = (e) => {
     setNewName(e.target.value);
@@ -37,18 +39,46 @@ const App = () => {
 
   const addNewPerson = (e) => {
     e.preventDefault();
+
     if (persons.some((person) => person.name === newName)) {
-      window.confirm(`${newName} is already added to the phonebook`);
+      if (
+        window.confirm(
+          `${newName} is already added to the phonebook, replace old number with new one?`
+        )
+      ) {
+        const person = persons.find((person) => person.name === newName);
+        const changedPerson = { ...person, number: newNumber };
+
+        personServices
+          .update(person.id, changedPerson)
+          .then((changedPerson) =>
+            setPersons(
+              persons.map((person) =>
+                person.id !== changedPerson.id ? person : changedPerson
+              )
+            )
+          );
+      }
     } else {
       const person = {
         name: newName,
         number: newNumber,
-        id: persons.length + 1,
       };
 
-      setPersons(persons.concat(person));
-      setNewName('');
-      setNewNumber('');
+      personServices.create(person).then((createdPerson) => {
+        setPersons(persons.concat(createdPerson));
+        setNewName('');
+        setNewNumber('');
+      });
+    }
+  };
+
+  const removePerson = (id) => {
+    const person = persons.find((person) => person.id === id);
+    if (window.confirm(`Do you want to delete ${person.name}?`)) {
+      personServices.remove(id).then(() => {
+        setPersons(persons.filter((person) => person.id !== id));
+      });
     }
   };
 
@@ -68,7 +98,7 @@ const App = () => {
 
       <h2>Numbers</h2>
 
-      <Persons personsToShow={personsToShow} />
+      <Persons personsToShow={personsToShow} removePerson={removePerson} />
     </>
   );
 };
