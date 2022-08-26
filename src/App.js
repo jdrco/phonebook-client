@@ -68,17 +68,27 @@ const App = () => {
         number: newNumber,
       };
 
-      personServices.create(person).then((createdPerson) => {
-        setPersons(persons.concat(createdPerson));
-        setNewName('');
-        setNewNumber('');
+      personServices
+        .create(person)
+        .then((createdPerson) => {
+          setPersons(persons.concat(createdPerson));
+          setNewName('');
+          setNewNumber('');
 
-        setNotification(`Added ${createdPerson.name} to your phonebook`);
-        setError(false);
-        setTimeout(() => {
-          setNotification(null);
-        }, 3000);
-      });
+          setNotification(`Added ${createdPerson.name} to your phonebook`);
+          setError(false);
+          setTimeout(() => {
+            setNotification(null);
+          }, 3000);
+        })
+        .catch((error) => {
+          setError(true);
+          setNotification(`${error.response.data.error}`);
+          setTimeout(() => {
+            setNotification(null);
+            setError(true);
+          }, 3000);
+        });
     }
   };
 
